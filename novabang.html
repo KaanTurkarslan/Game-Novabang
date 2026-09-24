@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NovaBang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  /* Oyun bilerek her temada koyu uzay renkleriyle çalışır. */
+  :root {
+    color-scheme: dark;
+    --bg: #050616;
+    --ink: #eef1ff;
+    --muted: #a3abdc;
+    --cyan: #5ef2ff;
+    --violet: #b48cff;
+    --danger: #ff6b7a;
+    --gold: #ffe28a;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; margin: 0; }
+  body {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Nunito, "Trebuchet MS", system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 20px; text-align: center; overflow-y: auto;
+    background: radial-gradient(ellipse at 50% 32%, rgba(58, 28, 120, .55), rgba(5, 6, 22, .88) 70%);
+    opacity: 1; visibility: visible;
+    transition: opacity .35s ease, visibility 0s;
+  }
+  .overlay.hidden {
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .35s ease, visibility 0s .35s;
+  }
+
+  h1, h2 { margin: 0; font-weight: 900; line-height: 1; }
+  h1 {
+    font-size: clamp(38px, 11vw, 72px);
+    color: var(--ink);
+    text-shadow: 0 0 6px rgba(94, 242, 255, .8), 0 0 28px rgba(94, 242, 255, .45), 0 0 60px rgba(180, 140, 255, .4);
+  }
+  h2 { font-size: clamp(30px, 8vw, 46px); color: var(--ink); text-shadow: 0 0 24px rgba(255, 107, 122, .45); }
+  .tag { margin: 0; color: var(--muted); font-size: clamp(15px, 4vw, 19px); font-weight: 700; max-width: 24em; }
+
+  .howto { list-style: none; margin: 4px 0 2px; padding: 0; display: grid; gap: 11px; text-align: left; max-width: 25em; }
+  .howto li { display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: clamp(14px, 3.7vw, 16px); line-height: 1.3; }
+  .ico { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-block; }
+  .ico.ok   { border: 2px solid var(--cyan);   background: radial-gradient(circle, rgba(180,140,255,.95) 0 24%, rgba(180,140,255,.18) 58%, transparent 72%); }
+  .ico.bad  { border: 2px dashed var(--danger); background: radial-gradient(circle, rgba(255,200,120,.95) 0 24%, rgba(255,160,90,.18) 58%, transparent 72%); }
+  .ico.hole { background: radial-gradient(circle, #000 0 40%, #7a3cff 60%, rgba(122,60,255,0) 74%); }
+  .ico.nova { background: radial-gradient(circle, #fff 0 22%, #ffd27a 44%, rgba(255,120,80,.3) 64%, transparent 74%); }
+
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font: 900 clamp(19px, 5vw, 23px) Nunito, "Trebuchet MS", sans-serif;
+    color: #06071b; background: var(--cyan);
+    min-height: 58px; padding: 0 44px; border-radius: 999px; margin-top: 6px;
+    box-shadow: 0 0 30px rgba(94, 242, 255, .4), 0 6px 0 rgba(20, 90, 110, .9);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(4px); box-shadow: 0 0 30px rgba(94, 242, 255, .4), 0 2px 0 rgba(20, 90, 110, .9); }
+  .btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+
+  .best { margin: 0; color: var(--gold); font-weight: 900; font-size: 16px; }
+  .best[hidden], .badge[hidden] { display: none; }
+  .hint { margin: 0; color: var(--muted); font-weight: 700; font-size: 14px; }
+
+  .badge { background: var(--gold); color: #2a1d00; font-weight: 900; font-size: 15px; padding: 6px 16px; border-radius: 999px; }
+  .big-score { font-size: clamp(56px, 18vw, 96px); font-weight: 900; line-height: 1; color: var(--cyan); text-shadow: 0 0 30px rgba(94, 242, 255, .45); }
+  .stats { display: grid; gap: 10px; width: min(330px, 100%); }
+  .stats div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 16px; border-radius: 14px; background: rgba(255, 255, 255, .07); font-weight: 700; }
+  .stats span { color: var(--muted); }
+  .stats b { color: var(--ink); font-weight: 900; text-align: right; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overlay, .overlay.hidden, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c" role="img" aria-label="NovaBang oyun alanı"></canvas>
+
+  <div id="start" class="overlay">
+    <h1>NovaBang</h1>
+    <p class="tag">Bir kıvılcımdan süpernovaya: galaksileri yut, büyü, patla.</p>
+    <ul class="howto">
+      <li><span class="ico ok"></span><span>Turkuaz halkalı galaksileri yut. Büyüdükçe rengin ve evren değişir.</span></li>
+      <li><span class="ico bad"></span><span>Kırmızı kesikli halkalı galaksiler seni kendine çeker. Çarparsan can kaybedersin.</span></li>
+      <li><span class="ico hole"></span><span>Kara delik, asteroit ve pulsar ışınlarından kaç. Zamanla soldan meteor yağmurları gelir.</span></li>
+      <li><span class="ico nova"></span><span>Yeterince büyüyünce süpernova patlar ve yeni, daha zor bir bölgeye geçersin.</span></li>
+    </ul>
+    <p class="best" id="bestStart" hidden></p>
+    <button class="btn" id="play">Başla</button>
+    <p class="hint">Parmağını ya da farenle sürükle, yıldız seni takip eder. Bilgisayarda ok tuşları ve WASD de çalışır.</p>
+  </div>
+
+  <div id="over" class="overlay hidden" role="dialog" aria-labelledby="overTitle">
+    <h2 id="overTitle">Yıldız söndü</h2>
+    <div class="badge" id="newBest" hidden>Yeni rekor!</div>
+    <div class="big-score" id="finalScore">0</div>
+    <div class="stats">
+      <div><span>En yüksek skor</span><b id="bestScore">0</b></div>
+      <div><span>Ulaşılan bölge</span><b id="finalSector">1</b></div>
+      <div><span>Ulaşılan evre</span><b id="finalStage">Yıldız Tozu</b></div>
+      <div><span>Yutulan galaksi</span><b id="finalEaten">0</b></div>
+    </div>
+    <button class="btn" id="again">Tekrar oyna</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ------------------------------------------------------------------
+   AYARLAR (sayıları buradan değiştirebilirsin)
+------------------------------------------------------------------ */
+const BASE_SPEED = 125;          // akış hızı (birim/sn). İlk sürümde 110'du.
+const NOVA_MASS = 200;           // bu büyüklükte süpernova patlar
+const SECTOR_START_MASS = 10;    // yeni bölgede yıldızın başlangıç büyüklüğü
+const LIVES_MAX = 3;
+const HIT_MASS_LOSS = .25;       // can kaybında büyüklük kaybı (%25)
+const GROWTH = 0.4;              // galaksi yutunca gelen büyüme çarpanı (küçüldükçe büyümek zorlaşır)
+const FADE = 0.3;                // yıldız bir evre büyüdükçe, altındaki av türünden alınan büyüme %30 azalır
+const MIN_GAIN = 0.15;           // küçük avdan en az bu oran kadar büyüme kalır
+const SECTOR_GROWTH_LOSS = 0.1;  // her yeni bölgede büyüme %10 daha zorlaşır (en fazla %40)
+const HOLE = { core: 60, field: 150, visual: 26 };
+const NOVA_CHARGE = 2.2, NOVA_REBORN = 3.0, NOVA_END = 3.9, WAVE_TIME = 1.5;
+const RAID_FIRST = 16;           // ilk meteor yağmuru (oyun başlayınca kaç sn sonra)
+const RAID_WARN = 2.2;           // yağmurdan önceki uyarı süresi (sn)
+
+// 6 evre, küçükten büyüğe. radius: evrenin başındaki yarıçap (birim), trail: kuyruk süresi (sn)
+const NOVA_RADIUS = 30;          // süpernovadan hemen önceki yarıçap
+const STAGES = [
+  { name: 'Yıldız Tozu',       min: 0,   rgb: [201, 212, 255], radius: 5,    trail: .30 },
+  { name: 'Meteor',            min: 10,  rgb: [255, 150, 80],  radius: 7.5,  trail: .50 },
+  { name: 'Kuyruklu Yıldız',   min: 30,  rgb: [111, 243, 255], radius: 10.5, trail: 1.0 },
+  { name: 'Sarı Cüce',         min: 60,  rgb: [255, 226, 110], radius: 14.5, trail: .75 },
+  { name: 'Mavi Dev',          min: 100, rgb: [120, 170, 255], radius: 19.5, trail: .85 },
+  { name: 'Kırmızı Süper Dev', min: 150, rgb: [255, 85, 65],   radius: 25,   trail: 1.0 }
+];
+const TYPES = {
+  spiral:   { label: 'Sarmal',  stage: 0,   r: [16, 24], gain: 3,  pts: 10,  hues: [200, 275, 330, 165] },
+  elliptic: { label: 'Eliptik', stage: 1,  r: [24, 32], gain: 6,  pts: 25,  hues: [28, 44, 12, 52] },
+  quasar:   { label: 'Kuasar',  stage: 2,  r: [30, 40], gain: 12, pts: 50,  hues: [190, 300, 255, 340] },
+  giant:    { label: 'Dev',     stage: 3,  r: [40, 50], gain: 18, pts: 100, hues: [215, 290, 25, 175] },
+  mega:     { label: 'Süper',   stage: 4, r: [52, 64], gain: 28, pts: 200, hues: [45, 320, 200, 260] }
+};
+// Bir galaksiyi yutmak için gereken en düşük büyüklük = ait olduğu evrenin başlangıcı
+const needMass = type => STAGES[TYPES[type].stage].min;
+const THEMES = [
+  { name: 'Mavi Uzay',      stops: ['#0b0a2e', '#070820', '#04051a'], neb: [265, 215, 310], star: '#aab6ff', star2: '#dfe6ff' },
+  { name: 'Kızıl Nebula',   stops: ['#2d0b1d', '#180712', '#0a030b'], neb: [350, 18, 315],  star: '#ffb8a8', star2: '#ffe6da' },
+  { name: 'Zümrüt Bulutsu', stops: ['#04262c', '#051b21', '#030d11'], neb: [165, 190, 135], star: '#a8ffe0', star2: '#defff5' }
+];
+const FONT = 'Nunito, "Trebuchet MS", system-ui, sans-serif';
+const STORE_KEY = 'yildizKaymasi.best';
+
+/* ------------------------------------------------------------------
+   TEMEL DEĞİŞKENLER
+------------------------------------------------------------------ */
+const $ = id => document.getElementById(id);
+const stageEl = $('stage'), cv = $('c'), ctx = cv.getContext('2d');
+const startOv = $('start'), overOv = $('over');
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const mixv = (a, b, k) => a + (b - a) * k;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const TAU = Math.PI * 2;
+
+let W = 0, H = 0, dpr = 1, u = 1;
+let state = 'menu';          // menu | play | nova | over
+let time = 0, scroll = BASE_SPEED;
+let score = 0, dispScore = 0, best = 0, newBest = false;
+let t = 0, secT = 0, level = 0, sector = 0, maxSector = 0, speedMult = 1;
+let spawnT = 0, holeT = 8, rockT = 5, pulsarT = 8;
+let raid = { phase: 'idle', t: 0, dur: 0, no: 0, next: RAID_FIRST, spawnT: 0 };   // meteor yağmuru durumu
+let eaten = 0, maxStageIdx = 0, hintSmall = false;
+let shake = 0, flash = 0, whiteFlash = 0;
+let themeIdx = 0, prevTheme = 0, themeMix = 1;
+let galaxies = [], holes = [], rocks = [], pulsars = [], parts = [], rings = [], floats = [], toasts = [];
+let bgStars = [], nebulae = [], bgGrads = [];
+let nova = { t: 0, exploded: false, reborn: false, gain: 0, waveR: 0, maxR: 1000 };
+const target = { x: 0, y: 0 };
+const P = { x: 0, y: 0, mass: 0, lives: LIVES_MAX, invul: 0, slow: 0, kx: 0, ky: 0, hidden: false, trail: [] };
+
+try { best = parseInt(localStorage.getItem(STORE_KEY), 10) || 0; } catch (e) { best = 0; }
+
+const stageIndex = m => { let i = 0; for (let k = 0; k < STAGES.length; k++) if (m >= STAGES[k].min) i = k; return i; };
+function stageLerp(field, endVal) {
+  const i = stageIndex(P.mass), a = STAGES[i], nx = STAGES[i + 1];
+  const endMass = nx ? nx.min : NOVA_MASS, end = nx ? nx[field] : endVal;
+  return mixv(a[field], end, clamp((P.mass - a.min) / (endMass - a.min), 0, 1));
+}
+const pr = () => stageLerp('radius', NOVA_RADIUS) * u;           // yıldızın yarıçapı
+const trailLife = () => stageLerp('trail', 1.1);                  // kuyruk süresi (sn)
+const sectorMult = () => 1 + 0.5 * sector;                      // bölge puan çarpanı
+const addShake = v => { if (!reduceMotion) shake = Math.max(shake, v); };
+const rgbStr = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+// Yıldızın rengi büyüklüğüne göre yumuşakça değişir
+function starColor(m) {
+  const i = stageIndex(m), a = STAGES[i].rgb, nx = STAGES[i + 1];
+  if (!nx) return a.slice();
+  const k = (m - STAGES[i].min) / (nx.min - STAGES[i].min);
+  const e = clamp((k - .55) / .45, 0, 1), s = e * e * (3 - 2 * e);
+  return a.map((v, j) => Math.round(mixv(v, nx.rgb[j], s)));
+}
+
+/* ------------------------------------------------------------------
+   GALAKSİ GÖRSELLERİ (bir kez çizilir, sonra ölçeklenip kullanılır)
+------------------------------------------------------------------ */
+const SPR = { spiral: [], elliptic: [], quasar: [], giant: [], mega: [] };
+function mk(fn) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'); g.translate(128, 128); fn(g); return c;
+}
+function glowDisc(g, r, stops) {
+  const gr = g.createRadialGradient(0, 0, 0, 0, 0, r);
+  stops.forEach(([o, c]) => gr.addColorStop(o, c));
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+}
+function spiralSprite(h, arms, dots, twist) {
+  return mk(g => {
+    glowDisc(g, 124, [[0, `hsla(${h},90%,72%,.5)`], [.55, `hsla(${h},85%,55%,.16)`], [1, `hsla(${h},85%,50%,0)`]]);
+    for (let arm = 0; arm < arms; arm++) {
+      for (let i = 0; i < dots; i++) {
+        const k = i / dots, a = arm * TAU / arms + k * twist + rnd(-.18, .18), r = 12 + k * 98 + rnd(-5, 5);
+        g.fillStyle = `hsla(${h + rnd(-18, 18)},95%,${rnd(68, 90)}%,${(1 - k * .72) * rnd(.5, 1)})`;
+        g.beginPath(); g.arc(Math.cos(a) * r, Math.sin(a) * r, rnd(.8, 2.6) * (1 - k * .45), 0, TAU); g.fill();
+      }
+    }
+    glowDisc(g, 30, [[0, 'rgba(255,255,255,1)'], [.4, `hsla(${h},95%,80%,.85)`], [1, `hsla(${h},90%,60%,0)`]]);
+  });
+}
+function buildSprites() {
+  TYPES.spiral.hues.forEach(h => SPR.spiral.push(spiralSprite(h, 2, 150, 4.4)));
+  TYPES.giant.hues.forEach(h => SPR.giant.push(spiralSprite(h, 3, 200, 3.6)));
+  TYPES.elliptic.hues.forEach(h => SPR.elliptic.push(mk(g => {
+    g.save(); g.rotate(rnd(-.7, .7)); g.scale(1, .62);
+    glowDisc(g, 122, [[0, 'rgba(255,246,222,1)'], [.18, `hsla(${h},95%,70%,.85)`], [.55, `hsla(${h},80%,50%,.28)`], [1, `hsla(${h},80%,45%,0)`]]);
+    for (let i = 0; i < 70; i++) {
+      const a = rnd(0, TAU), r = Math.sqrt(Math.random()) * 95;
+      g.fillStyle = `hsla(${h + rnd(-10, 10)},90%,${rnd(70, 92)}%,${rnd(.25, .8)})`;
+      g.beginPath(); g.arc(Math.cos(a) * r, Math.sin(a) * r, rnd(.7, 1.9), 0, TAU); g.fill();
+    }
+    g.restore();
+  })));
+  TYPES.quasar.hues.forEach(h => SPR.quasar.push(mk(g => {
+    g.save(); g.rotate(rnd(0, Math.PI));
+    const jg = g.createLinearGradient(0, -125, 0, 125);
+    jg.addColorStop(0, `hsla(${h},95%,75%,0)`); jg.addColorStop(.5, 'rgba(255,255,255,.95)'); jg.addColorStop(1, `hsla(${h},95%,75%,0)`);
+    g.fillStyle = jg; g.fillRect(-2.5, -125, 5, 250);
+    g.globalAlpha = .35; g.fillRect(-7, -110, 14, 220); g.globalAlpha = 1;
+    g.restore();
+    glowDisc(g, 120, [[0, 'rgba(255,255,255,.95)'], [.2, `hsla(${h},95%,72%,.6)`], [.6, `hsla(${h},90%,55%,.15)`], [1, `hsla(${h},90%,50%,0)`]]);
+    g.strokeStyle = `hsla(${h},95%,80%,.35)`; g.lineWidth = 2;
+    [44, 68].forEach(r => { g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke(); });
+    glowDisc(g, 26, [[0, '#fff'], [1, `hsla(${h},95%,80%,0)`]]);
+  })));
+  TYPES.mega.hues.forEach(h => SPR.mega.push(mk(g => {
+    glowDisc(g, 126, [[0, `hsla(${h},95%,80%,.75)`], [.35, `hsla(${h},90%,60%,.32)`], [.7, `hsla(${h},85%,50%,.1)`], [1, `hsla(${h},85%,50%,0)`]]);
+    for (let i = 0; i < 260; i++) {
+      const a = rnd(0, TAU), r = Math.pow(Math.random(), 1.6) * 108;
+      g.fillStyle = `hsla(${h + rnd(-25, 25)},95%,${rnd(72, 95)}%,${rnd(.35, .95)})`;
+      g.beginPath(); g.arc(Math.cos(a) * r, Math.sin(a) * r, rnd(.7, 2.4), 0, TAU); g.fill();
+    }
+    g.strokeStyle = `hsla(${h},95%,85%,.4)`; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(0, 0, 100, 0, TAU); g.stroke();
+    glowDisc(g, 38, [[0, '#fff'], [.5, `hsla(${h},95%,85%,.8)`], [1, `hsla(${h},95%,70%,0)`]]);
+  })));
+}
+
+/* ------------------------------------------------------------------
+   BOYUTLANDIRMA + ARKA PLAN
+------------------------------------------------------------------ */
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = stageEl.clientWidth; H = stageEl.clientHeight;
+  if (!W || !H) return;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  u = Math.max(0.6, Math.min(W / 480, H / 800, 1.4));
+  initBackground();
+  if (state === 'menu' || state === 'over') { P.x = W / 2; P.y = H * .72; target.x = P.x; target.y = P.y; }
+}
+function initBackground() {
+  bgGrads = THEMES.map(th => {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, th.stops[0]); g.addColorStop(.55, th.stops[1]); g.addColorStop(1, th.stops[2]);
+    return g;
+  });
+  const n = Math.round(W * H / 5200);
+  bgStars = [];
+  for (let i = 0; i < n; i++) bgStars.push({ x: rnd(0, W), y: rnd(0, H), l: i % 3, ph: rnd(0, TAU), sp: rnd(1, 3) });
+  nebulae = [{ x: .2, y: .15, r: .55 }, { x: .85, y: .5, r: .5 }, { x: .4, y: .85, r: .6 }]
+    .map((o, i) => ({ x: o.x * W, y: o.y * H, r: o.r * Math.max(W, H) * .6, i }));
+}
+
+/* ------------------------------------------------------------------
+   OLUŞTURMA (spawn)
+------------------------------------------------------------------ */
+function galaxyPool(prefill) {
+  const pool = [['spiral', 40]];
+  if (prefill) return pool;
+  if (state !== 'play') { pool.push(['elliptic', 30], ['quasar', 20], ['giant', 10]); return pool; }
+  const adv = sector > 0;
+  if (adv || secT > 4 || P.mass >= 10) pool.push(['elliptic', 30]);
+  if (adv || secT > 18 || P.mass >= 18) pool.push(['quasar', 20]);
+  if (adv || secT > 28 || P.mass >= 45) pool.push(['giant', 14]);
+  if ((adv && secT > 10) || P.mass >= 80 || secT > 55) pool.push(['mega', 10]);
+  const cs = stageIndex(P.mass);
+  return pool.map(([n, w]) => [n, w * Math.max(.25, 1 - .2 * Math.max(0, cs - TYPES[n].stage))]);
+}
+function spawnGalaxy(prefill) {
+  const pool = galaxyPool(prefill);
+  let roll = Math.random() * pool.reduce((s, p) => s + p[1], 0), type = 'spiral';
+  for (const [name, w] of pool) { if ((roll -= w) <= 0) { type = name; break; } }
+  const T = TYPES[type], idx = (Math.random() * 4) | 0;
+  const r = rnd(T.r[0], T.r[1]) * u;
+  galaxies.push({
+    type, r, hue: T.hues[idx], spr: SPR[type][idx],
+    x: rnd(r, W - r), y: prefill ? rnd(.04, .55) * H : -r * 2,
+    k: rnd(.85, 1.15), vx: rnd(-16, 16), rot: rnd(0, TAU), spin: rnd(-.5, .5)
+  });
+}
+function spawnHole() {
+  const R = HOLE.field * u;
+  holes.push({
+    x: rnd(Math.min(R * .5, W / 2), Math.max(W - R * .5, W / 2)), y: -R * .6,
+    parts: Array.from({ length: 16 }, (_, i) => ({ ph: i / 16, sp: rnd(.18, .32), a0: rnd(0, TAU) }))
+  });
+}
+function spawnRocks() {
+  const n = 4 + ((Math.random() * 4) | 0) + Math.min(3, sector), cx = rnd(W * .15, W * .85), spread = 70 * u;
+  for (let i = 0; i < n; i++) {
+    const r = rnd(8, 14) * u;
+    rocks.push({
+      kind: 'rock', x: cx + rnd(-spread, spread), y: -r * 2 - i * rnd(18, 34) * u, r,
+      k: rnd(1, 1.25), vxk: rnd(-.08, .08), rot: rnd(0, TAU), spin: rnd(-2, 2),
+      shape: Array.from({ length: 9 }, () => rnd(.72, 1.15))
+    });
+  }
+}
+// Meteor yağmuru: her yağmurda güç artar (yoğunluk, hız, boyut, süre)
+const raidPower = () => Math.max(0, raid.no - 1) + sector;
+function spawnMeteors() {
+  const p = raidPower();
+  const n = 1 + (p >= 5 && Math.random() < .5 ? 1 : 0) + (p >= 10 && Math.random() < .5 ? 1 : 0);
+  const ang = rnd(28, 52) * Math.PI / 180;                  // soldan sağa, aşağı doğru
+  const sp = Math.min(520, 250 + p * 20) * u;
+  const big = p >= 3 && Math.random() < .15;                // büyük kaya
+  const fromLeft = Math.random() < .5;
+  const x0 = fromLeft ? -40 * u : rnd(-.1 * W, .85 * W);
+  const y0 = fromLeft ? rnd(-.05 * H, .55 * H) : -40 * u;
+  for (let i = 0; i < n; i++) {
+    const a = ang + rnd(-.06, .06), s = sp * rnd(.9, 1.15) * (big ? .75 : 1), back = i * rnd(40, 70) * u;
+    rocks.push({
+      kind: 'meteor', abs: true, big, dmg: big ? 18 : 12,
+      x: x0 - Math.cos(a) * back + rnd(-20, 20) * u, y: y0 - Math.sin(a) * back + rnd(-20, 20) * u,
+      r: (big ? rnd(17, 23) : rnd(7, 12)) * u, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      rot: rnd(0, TAU), spin: rnd(-3, 3), shape: Array.from({ length: 9 }, () => rnd(.75, 1.15))
+    });
+  }
+}
+function updateRaid(dt) {
+  raid.t += dt;
+  if (raid.phase === 'idle') {
+    raid.next -= dt;
+    if (raid.next <= 0) {
+      raid.no++; raid.phase = 'warn'; raid.t = 0; raid.dur = Math.min(12, 5 + raid.no * .7); raid.spawnT = 0;
+      toast('Meteor yağmuru! Soldan geliyor', '#ff9a5c', 2.4);
+    }
+  } else if (raid.phase === 'warn') {
+    if (raid.t >= RAID_WARN) { raid.phase = 'active'; raid.t = 0; }
+  } else {
+    raid.spawnT -= dt;
+    if (raid.spawnT <= 0) {
+      spawnMeteors();
+      const rate = Math.min(6, 2 + raidPower() * .35) * Math.min(2.2, Math.max(1, W / (480 * u)));
+      raid.spawnT = rnd(.7, 1.3) / rate;
+    }
+    if (raid.t >= raid.dur) { raid.phase = 'idle'; raid.t = 0; raid.next = Math.max(10, 24 - raidPower() * 1.5); }
+  }
+}
+function spawnPulsar() {
+  pulsars.push({ x: rnd(W * .2, W * .8), y: -160 * u, k: .55, a: rnd(0, TAU), spin: (Math.random() < .5 ? -1 : 1) * rnd(1, 1.5) });
+}
+
+/* ------------------------------------------------------------------
+   EFEKTLER
+------------------------------------------------------------------ */
+function burst(x, y, color, n, speed) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, TAU), s = rnd(.3, 1) * speed;
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: rnd(.45, .9), size: rnd(1.5, 3.5) * Math.max(.8, u), color });
+  }
+  if (parts.length > 600) parts.splice(0, parts.length - 600);
+}
+const ring = (x, y, r0, r1, life, color) => rings.push({ x, y, r0, r1, life, t: 0, color });
+const floatText = (x, y, text, color) => floats.push({ x, y, text, color, t: 0, life: 0.9 });
+function toast(text, color, life) {
+  toasts.push({ text, color: color || '#eef1ff', t: 0, life: life || 2.2 });
+  if (toasts.length > 3) toasts.shift();
+}
+
+/* ------------------------------------------------------------------
+   OYUN OLAYLARI
+------------------------------------------------------------------ */
+function evolve(ni) {
+  maxStageIdx = Math.max(maxStageIdx, ni);
+  const c = starColor(STAGES[ni].min);
+  toast('Evrim: ' + STAGES[ni].name, rgbStr(c));
+  ring(P.x, P.y, pr(), pr() * 9, .7, rgbStr(c));
+  burst(P.x, P.y, rgbStr(c), 26, u * 220);
+  addShake(5 * u);
+}
+function eat(g, i) {
+  const T = TYPES[g.type];
+  galaxies.splice(i, 1);
+  const pts = Math.round(T.pts * sectorMult());
+  score += pts; eaten++;
+  const prev = stageIndex(P.mass);
+  // Büyüdükçe küçük galaksiler daha az besler; yeni bölgelerde büyüme daha da zorlaşır
+  const rel = Math.max(MIN_GAIN, 1 - FADE * Math.max(0, prev - T.stage));
+  const gain = T.gain * GROWTH * rel * Math.max(.6, 1 - SECTOR_GROWTH_LOSS * sector);
+  P.mass = Math.min(NOVA_MASS, P.mass + gain);
+  if (rel < .5 && !hintSmall) { hintSmall = true; toast('Büyüdükçe küçük galaksiler daha az besler', '#a3abdc', 3.2); }
+  burst(g.x, g.y, `hsl(${g.hue},95%,70%)`, 16, u * 160);
+  ring(g.x, g.y, g.r * .6, g.r * 2.2, .45, `hsl(${g.hue},95%,72%)`);
+  floatText(g.x, g.y - g.r * .5, '+' + pts, '#5ef2ff');
+  const ni = stageIndex(P.mass);
+  if (ni > prev) evolve(ni);
+  if (P.mass >= NOVA_MASS) startNova();
+}
+function damage(msg) {
+  const prevIdx = stageIndex(P.mass);
+  P.lives--; P.mass = Math.floor(P.mass * (1 - HIT_MASS_LOSS)); P.invul = 1.5;
+  addShake(14 * u); flash = 1;
+  burst(P.x, P.y, 'rgb(255,107,122)', 18, u * 200);
+  const ni = stageIndex(P.mass);
+  if (P.lives > 0) toast(ni < prevIdx ? 'Küçüldün: ' + STAGES[ni].name : msg, '#ff6b7a');
+  else gameOver();
+}
+function hurtFromGalaxy(g, i) {
+  galaxies.splice(i, 1);
+  burst(g.x, g.y, 'rgb(255,107,122)', 14, u * 150);
+  damage('Bu galaksi için çok küçüksün. −1 can');
+}
+function hurtFromHole(hx, hy, hd) {
+  if (P.invul > 0) return;
+  const nx = hd > 0 ? -hx / hd : 0, ny = hd > 0 ? -hy / hd : -1;
+  P.kx = nx * 520 * u; P.ky = ny * 520 * u;
+  damage('Kara delik seni yakaladı. −1 can');
+}
+function hitRock(o, i) {
+  rocks.splice(i, 1);
+  const meteor = o.kind === 'meteor';
+  burst(o.x, o.y, meteor ? 'rgb(255,170,90)' : 'rgb(190,170,150)', 12, u * 140);
+  if (P.invul > 0) return;
+  const loss = meteor ? o.dmg : 8, prev = stageIndex(P.mass);
+  if (meteor && P.mass < loss) { damage('Meteor çarptı! −1 can'); return; }   // küçükken meteor can götürür
+  P.mass = Math.max(0, P.mass - loss); P.slow = 1; P.invul = .4;
+  addShake(6 * u); flash = Math.max(flash, .45);
+  floatText(P.x, P.y - pr() * 2.2, '−' + loss, '#ff6b7a');
+  const ni = stageIndex(P.mass);
+  if (ni < prev) toast('Küçüldün: ' + STAGES[ni].name, '#ff6b7a');
+}
+function gameOver() {
+  state = 'over';
+  burst(P.x, P.y, 'rgb(255,225,150)', 40, u * 300);
+  ring(P.x, P.y, pr(), pr() * 12, .9, 'rgb(255,200,120)');
+  addShake(16 * u); P.trail.length = 0;
+  newBest = score > best && score > 0;
+  if (newBest) { best = score; try { localStorage.setItem(STORE_KEY, String(best)); } catch (e) {} }
+  $('finalScore').textContent = score.toLocaleString('tr-TR');
+  $('bestScore').textContent = best.toLocaleString('tr-TR');
+  $('finalSector').textContent = (maxSector + 1) + '. bölge · ' + THEMES[maxSector % THEMES.length].name;
+  $('finalStage').textContent = STAGES[maxStageIdx].name;
+  $('finalEaten').textContent = eaten;
+  $('newBest').hidden = !newBest;
+  setTimeout(() => {
+    if (state === 'over') { overOv.classList.remove('hidden'); $('again').focus({ preventScroll: true }); }
+  }, 900);
+}
+
+/* ---- Süpernova ---- */
+function startNova() {
+  state = 'nova';
+  nova = { t: 0, exploded: false, reborn: false, gain: 0, waveR: 0, maxR: Math.hypot(W, H) * 1.05 };
+  P.invul = 0; P.kx = 0; P.ky = 0;
+  raid.phase = 'idle'; raid.t = 0;
+  toast('Süpernova!', '#ffffff', 2.4);
+}
+function explodeNova() {
+  nova.exploded = true; P.hidden = true; P.trail.length = 0;
+  whiteFlash = 1; addShake(24 * u);
+  ring(P.x, P.y, 10, nova.maxR, WAVE_TIME, 'rgb(255,255,255)');
+  ring(P.x, P.y, 10, nova.maxR * .75, WAVE_TIME * .75, 'rgb(255,214,140)');
+  burst(P.x, P.y, 'rgb(255,235,190)', 90, u * 520);
+  burst(P.x, P.y, 'rgb(255,150,90)', 60, u * 380);
+  score += 1000; nova.gain = 1000;
+  sector++; maxSector = Math.max(maxSector, sector); secT = 0; level = 0;
+  prevTheme = themeIdx; themeIdx = sector % THEMES.length; themeMix = 0;
+}
+function waveClear() {
+  const R = nova.waveR;
+  const kill = (o, pts, col) => {
+    nova.gain += pts; score += pts;
+    burst(o.x, o.y, col, 12, u * 200);
+    floatText(o.x, o.y, '+' + pts, '#ffe28a');
+  };
+  for (let i = galaxies.length - 1; i >= 0; i--) { const g = galaxies[i]; if (Math.hypot(g.x - P.x, g.y - P.y) < R + g.r) { kill(g, TYPES[g.type].pts, `hsl(${g.hue},95%,70%)`); galaxies.splice(i, 1); } }
+  for (let i = holes.length - 1; i >= 0; i--) { const h = holes[i]; if (Math.hypot(h.x - P.x, h.y - P.y) < R) { kill(h, 100, 'rgb(180,130,255)'); holes.splice(i, 1); } }
+  for (let i = pulsars.length - 1; i >= 0; i--) { const p = pulsars[i]; if (Math.hypot(p.x - P.x, p.y - P.y) < R) { kill(p, 100, 'rgb(120,240,255)'); pulsars.splice(i, 1); } }
+  for (let i = rocks.length - 1; i >= 0; i--) { const o = rocks[i]; if (Math.hypot(o.x - P.x, o.y - P.y) < R) { kill(o, 25, 'rgb(220,200,180)'); rocks.splice(i, 1); } }
+}
+function updateNova(dt) {
+  nova.t += dt;
+  P.x += (W / 2 - P.x) * Math.min(1, dt * 3); P.y += (H * .6 - P.y) * Math.min(1, dt * 3);
+  target.x = P.x; target.y = P.y;
+  if (!nova.exploded) {
+    const k = Math.min(1, nova.t / NOVA_CHARGE);
+    if (!reduceMotion) shake = Math.max(shake, k * 7 * u);
+    if (Math.random() < .9) {
+      const a = rnd(0, TAU), d = rnd(120, 230) * u;
+      parts.push({ x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, vx: -Math.cos(a) * d / .5, vy: -Math.sin(a) * d / .5,
+        t: 0, life: .5, size: rnd(1.5, 3) * Math.max(.8, u), color: 'rgb(255,240,200)', keep: true });
+    }
+    if (nova.t >= NOVA_CHARGE) explodeNova();
+  } else {
+    const k = Math.min(1, (nova.t - NOVA_CHARGE) / WAVE_TIME), e = 1 - Math.pow(1 - k, 3);
+    nova.waveR = 10 + (nova.maxR - 10) * e;
+    waveClear();
+    if (!nova.reborn && nova.t >= NOVA_REBORN) {
+      nova.reborn = true; P.hidden = false; P.mass = SECTOR_START_MASS; P.invul = 2.5; P.slow = 0;
+      P.lives = Math.min(LIVES_MAX, P.lives + 1);
+      maxStageIdx = Math.max(maxStageIdx, stageIndex(P.mass));
+      ring(P.x, P.y, pr(), pr() * 8, .8, 'rgb(255,240,200)'); burst(P.x, P.y, 'rgb(255,240,200)', 24, u * 200);
+    }
+    if (nova.t >= NOVA_END) endNova();
+  }
+}
+function endNova() {
+  state = 'play';
+  spawnT = .5; holeT = 5; rockT = 3; pulsarT = 8;
+  raid.phase = 'idle'; raid.t = 0; raid.next = 10;
+  toast('Süpernova bonusu +' + nova.gain.toLocaleString('tr-TR'), '#ffe28a', 3);
+  toast((sector + 1) + '. bölge: ' + THEMES[themeIdx].name + '  (puan ×' + sectorMult().toFixed(1) + ')', '#ffffff', 3.2);
+  toast(sector === 1 ? 'Yeni tehlike: pulsar ışınları' : sector === 2 ? 'Meteor yağmurları daha sık ve yoğun' : 'Her şey daha hızlı ve daha çekici', '#ff9aa6', 3.2);
+}
+
+function startGame() {
+  galaxies = []; holes = []; rocks = []; pulsars = []; parts = []; rings = []; floats = []; toasts = [];
+  score = 0; dispScore = 0; t = 0; secT = 0; level = 0; sector = 0; maxSector = 0; speedMult = 1;
+  spawnT = .3; holeT = 8; rockT = 5; pulsarT = 8;
+  raid = { phase: 'idle', t: 0, dur: 0, no: 0, next: RAID_FIRST, spawnT: 0 };
+  eaten = 0; maxStageIdx = 0; hintSmall = false; shake = 0; flash = 0; whiteFlash = 0; newBest = false;
+  themeIdx = 0; prevTheme = 0; themeMix = 1;
+  Object.assign(P, { mass: 0, lives: LIVES_MAX, invul: 0, slow: 0, kx: 0, ky: 0, hidden: false, x: W / 2, y: H * .72 });
+  P.trail.length = 0; target.x = P.x; target.y = P.y;
+  state = 'play';
+  for (let i = 0; i < 4; i++) spawnGalaxy(true);
+  startOv.classList.add('hidden'); overOv.classList.add('hidden');
+  toast('Turkuaz halkalı galaksileri yut', '#5ef2ff', 3.4);
+}
+
+/* ------------------------------------------------------------------
+   GÜNCELLEME
+------------------------------------------------------------------ */
+function updateWorld(dt) {
+  const playing = state === 'play';
+  scroll = BASE_SPEED * u * (playing ? speedMult : state === 'nova' ? .35 : .75);
+
+  for (const s of bgStars) { s.y += scroll * [.12, .3, .65][s.l] * dt; if (s.y > H) { s.y = -2; s.x = rnd(0, W); } }
+  for (const n of nebulae) { n.y += scroll * .08 * dt; if (n.y - n.r > H) { n.y = -n.r; n.x = rnd(0, W); } }
+  if (themeMix < 1) themeMix = Math.min(1, themeMix + dt / 2);
+  dispScore += (score - dispScore) * Math.min(1, dt * 12);
+
+  if (state !== 'nova') {
+    spawnT -= dt;
+    if (spawnT <= 0) {
+      spawnGalaxy(false);
+      const widthFactor = Math.max(1, W / (480 * u));
+      const base = playing ? Math.max(.3, .75 / speedMult) : 1.2;
+      spawnT = base / widthFactor * rnd(.7, 1.3);
+    }
+  }
+  if (playing) {
+    holeT -= dt; rockT -= dt;
+    if (sector >= 1) pulsarT -= dt;
+    updateRaid(dt);
+    if (holeT <= 0) {
+      if (holes.length < Math.min(3, 1 + (secT > 45 ? 1 : 0) + Math.min(2, sector))) spawnHole();
+      holeT = Math.max(3.5, 7 - level * .7 - sector * .6) + rnd(-1, 1);
+    }
+    if (rockT <= 0) { spawnRocks(); rockT = Math.max(2.4, 6 - level * .4 - sector * .7) + rnd(-1, 1); }
+    if (pulsarT <= 0) {
+      if (pulsars.length < (sector >= 3 ? 2 : 1)) spawnPulsar();
+      pulsarT = Math.max(6, 13 - level * .6 - sector * 1.2);
+    }
+  }
+
+  for (let i = galaxies.length - 1; i >= 0; i--) {
+    const g = galaxies[i];
+    g.y += scroll * g.k * dt; g.x += g.vx * u * dt; g.rot += g.spin * dt;
+    if (g.y > H + g.r * 2.5 || g.x < -g.r * 3 || g.x > W + g.r * 3) galaxies.splice(i, 1);
+  }
+  for (let i = holes.length - 1; i >= 0; i--) {
+    const h = holes[i];
+    h.y += scroll * .7 * dt;
+    for (const p of h.parts) p.ph = (p.ph + dt * p.sp) % 1;
+    if (h.y > H + HOLE.field * u) holes.splice(i, 1);
+  }
+  for (let i = rocks.length - 1; i >= 0; i--) {
+    const o = rocks[i];
+    if (o.abs) { const wf = state === 'nova' ? .35 : 1; o.x += o.vx * wf * dt; o.y += o.vy * wf * dt; }
+    else { o.y += scroll * o.k * dt; o.x += scroll * o.vxk * dt; }
+    o.rot += o.spin * dt;
+    const out = o.abs ? (o.y > H + 160 * u || o.x > W + 160 * u || o.x < -400 * u || o.y < -400 * u)
+                      : (o.y > H + 120 * u || o.x < -140 * u || o.x > W + 140 * u);
+    if (out) rocks.splice(i, 1);
+  }
+  for (let i = pulsars.length - 1; i >= 0; i--) {
+    const p = pulsars[i];
+    p.y += scroll * p.k * dt; p.a += p.spin * dt;
+    if (p.y > H + 190 * u) pulsars.splice(i, 1);
+  }
+
+  if (state === 'menu') {
+    P.mass = 62;
+    P.x = W / 2 + Math.sin(time * .9) * W * .12;
+    P.y = H * .72 + Math.cos(time * 1.3) * 10 * u;
+  }
+  if (state !== 'over' && !P.hidden) {
+    P.trail.push({ x: P.x, y: P.y, age: 0 });
+    const life = trailLife();
+    for (const p of P.trail) { p.age += dt; p.y += scroll * dt; }
+    while (P.trail.length && P.trail[0].age > life) P.trail.shift();
+  }
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.t += dt;
+    if (p.t > p.life) { parts.splice(i, 1); continue; }
+    if (p.keep) { p.x += p.vx * dt; p.y += p.vy * dt; continue; }
+    const damp = Math.exp(-2 * dt);
+    p.vx *= damp; p.vy *= damp; p.x += p.vx * dt; p.y += (p.vy + scroll * .4) * dt;
+  }
+  for (let i = rings.length - 1; i >= 0; i--) { rings[i].t += dt; if (rings[i].t > rings[i].life) rings.splice(i, 1); }
+  for (let i = floats.length - 1; i >= 0; i--) { const f = floats[i]; f.t += dt; f.y -= 40 * u * dt; if (f.t > f.life) floats.splice(i, 1); }
+  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].t += dt; if (toasts[i].t > toasts[i].life) toasts.splice(i, 1); }
+  shake *= Math.exp(-8 * dt); if (shake < .3) shake = 0;
+  flash = Math.max(0, flash - dt * 2.5);
+  whiteFlash = Math.max(0, whiteFlash - dt * .9);
+}
+
+// Engellerin çekim kuvveti: yıldızı kendilerine doğru sürükler
+function applyGravity(dt) {
+  const damp = P.invul > 0 ? .5 : 1;
+  const pull = (x, y, field, strength) => {
+    const dx = x - P.x, dy = y - P.y, d = Math.hypot(dx, dy);
+    if (d < field && d > 1) {
+      const f = Math.pow(1 - d / field, 1.5) * strength * damp;
+      P.x += dx / d * f * dt; P.y += dy / d * f * dt;
+    }
+  };
+  for (const h of holes) pull(h.x, h.y, HOLE.field * u, (260 + 40 * sector) * u);
+  for (const g of galaxies) {
+    if (P.mass < needMass(g.type)) pull(g.x, g.y, g.r * 3.2, 160 * u * clamp(g.r / (30 * u), .6, 2.2));
+  }
+  for (const o of rocks) if (o.kind === 'rock') pull(o.x, o.y, o.r * 5, 80 * u);
+  for (const p of pulsars) pull(p.x, p.y, 120 * u, 120 * u);
+}
+
+function segDist(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
+  const k = clamp(((px - x1) * dx + (py - y1) * dy) / l2, 0, 1);
+  return Math.hypot(px - (x1 + k * dx), py - (y1 + k * dy));
+}
+
+function updatePlay(dt) {
+  t += dt; secT += dt; level = Math.floor(secT / 30);
+  speedMult = (1 + .1 * level) * (1 + .2 * sector);
+  if (P.invul > 0) P.invul -= dt;
+  if (P.slow > 0) P.slow -= dt;
+  if (kbActive) {                                        // klavye hedef noktayı yıldızın önüne koyar
+    let kx = 0, ky = 0;
+    for (const k in keysDown) { kx += DIRS[k][0]; ky += DIRS[k][1]; }
+    if (kx || ky) { const n = Math.hypot(kx, ky); target.x = clamp(P.x + kx / n * 220 * u, 0, W); target.y = clamp(P.y + ky / n * 220 * u, 0, H); }
+    else { target.x = P.x; target.y = P.y; kbActive = false; }
+  }
+
+  // Yıldız, parmağın/farenin olduğu yere yumuşakça kayar
+  const dx = target.x - P.x, dy = target.y - P.y, d = Math.hypot(dx, dy);
+  if (d > .5) { const sp = Math.min(d * 9, 560 * u * (P.slow > 0 ? .5 : 1)); P.x += dx / d * sp * dt; P.y += dy / d * sp * dt; }
+
+  applyGravity(dt);
+
+  // Kara delik çekirdeği
+  const C = HOLE.core * u;
+  for (const h of holes) {
+    const hx = h.x - P.x, hy = h.y - P.y, hd = Math.hypot(hx, hy);
+    if (hd < C) { hurtFromHole(hx, hy, hd); if (state !== 'play') return; }
+  }
+  P.x += P.kx * dt; P.y += P.ky * dt;
+  const kd = Math.exp(-5 * dt); P.kx *= kd; P.ky *= kd;
+
+  const r = pr();
+  P.x = clamp(P.x, r, W - r); P.y = clamp(P.y, r, H - r);
+
+  // Galaksiler
+  for (let i = galaxies.length - 1; i >= 0; i--) {
+    const g = galaxies[i];
+    if (Math.hypot(g.x - P.x, g.y - P.y) < g.r + r * .6) {
+      if (P.mass >= needMass(g.type)) { eat(g, i); if (state !== 'play') return; }
+      else if (P.invul <= 0) { hurtFromGalaxy(g, i); if (state !== 'play') return; }
+    }
+  }
+  // Asteroit ve kuyruklu yıldızlar
+  for (let i = rocks.length - 1; i >= 0; i--) {
+    const o = rocks[i];
+    if (Math.hypot(o.x - P.x, o.y - P.y) < o.r + r * .7) { hitRock(o, i); if (state !== 'play') return; }
+  }
+  // Pulsar ışınları
+  if (P.invul <= 0) {
+    for (const p of pulsars) {
+      const L = 150 * u, ca = Math.cos(p.a), sa = Math.sin(p.a);
+      const hit = Math.hypot(p.x - P.x, p.y - P.y) < 12 * u + r * .6 ||
+        segDist(P.x, P.y, p.x - ca * L, p.y - sa * L, p.x + ca * L, p.y + sa * L) < 5 * u + r * .6;
+      if (hit) { damage('Pulsar ışını! −1 can'); if (state !== 'play') return; break; }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   ÇİZİM
+------------------------------------------------------------------ */
+function starPath(x, y, ro, ri, n = 5) {
+  ctx.beginPath();
+  for (let i = 0; i < n * 2; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / n, r = i % 2 ? ri : ro;
+    const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function paintBg(idx, alpha) {
+  const th = THEMES[idx];
+  ctx.globalAlpha = alpha; ctx.fillStyle = bgGrads[idx]; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  for (const n of nebulae) {
+    const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+    g.addColorStop(0, `hsla(${th.neb[n.i]},80%,50%,.20)`); g.addColorStop(1, `hsla(${th.neb[n.i]},80%,50%,0)`);
+    ctx.fillStyle = g; ctx.fillRect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2);
+  }
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+}
+function drawBackground() {
+  if (themeMix < 1) { paintBg(prevTheme, 1); paintBg(themeIdx, themeMix); } else paintBg(themeIdx, 1);
+  const th = THEMES[themeMix > .5 ? themeIdx : prevTheme], sizes = [.9, 1.3, 1.9];
+  for (const s of bgStars) {
+    ctx.globalAlpha = (.35 + .65 * (.5 + .5 * Math.sin(time * s.sp + s.ph))) * (.45 + .2 * s.l);
+    ctx.fillStyle = s.l === 2 ? th.star2 : th.star;
+    ctx.fillRect(s.x, s.y, sizes[s.l], sizes[s.l]);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHole(h) {
+  const R = HOLE.field * u, C = HOLE.core * u, rv = HOLE.visual * u;
+  ctx.save(); ctx.translate(h.x, h.y);
+  let g = ctx.createRadialGradient(0, 0, C * .6, 0, 0, R);
+  g.addColorStop(0, 'rgba(120,60,255,.28)'); g.addColorStop(1, 'rgba(120,60,255,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(180,140,255,.22)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
+
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of h.parts) {
+    const rad = R - (R - C * .7) * p.ph, a = p.a0 + p.ph * 5 + time * .5;
+    ctx.globalAlpha = Math.sin(p.ph * Math.PI) * .8; ctx.fillStyle = '#c7a6ff';
+    ctx.beginPath(); ctx.arc(Math.cos(a) * rad, Math.sin(a) * rad, 1.6 * Math.max(.9, u), 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+  ctx.setLineDash([7 * u, 6 * u]); ctx.lineDashOffset = -time * 18;
+  ctx.strokeStyle = 'rgba(255,107,122,.7)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, C, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+
+  g = ctx.createRadialGradient(0, 0, rv * .9, 0, 0, C);
+  g.addColorStop(0, 'rgba(255,140,80,.55)'); g.addColorStop(.5, 'rgba(190,70,180,.25)'); g.addColorStop(1, 'rgba(120,60,255,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, C, 0, TAU); ctx.fill();
+  ctx.save(); ctx.rotate(-.35); ctx.scale(1, .38);
+  ctx.strokeStyle = 'rgba(255,190,120,.9)'; ctx.lineWidth = 4 * u;
+  ctx.beginPath(); ctx.arc(0, 0, rv * 1.6, 0, TAU); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, rv, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,150,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, rv, 0, TAU); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPulsar(p) {
+  const L = 150 * u, w = 9 * u;
+  ctx.save(); ctx.translate(p.x, p.y);
+  ctx.strokeStyle = 'rgba(120,240,255,.14)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0, 0, 120 * u, 0, TAU); ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 2; i++) {
+    ctx.save(); ctx.rotate(p.a + i * Math.PI);
+    const g = ctx.createLinearGradient(0, 0, L, 0);
+    g.addColorStop(0, 'rgba(160,250,255,.95)'); g.addColorStop(1, 'rgba(120,200,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, -w / 2, L, w);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(0, -1.2, L * .8, 2.4);
+    ctx.restore();
+  }
+  const pulse = 1 + .15 * Math.sin(time * 9);
+  const g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, 46 * u * pulse);
+  g2.addColorStop(0, 'rgba(200,255,255,.9)'); g2.addColorStop(1, 'rgba(90,220,255,0)');
+  ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(0, 0, 46 * u * pulse, 0, TAU); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 8 * u, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function drawRock(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  const poly = () => {
+    ctx.beginPath();
+    o.shape.forEach((k, i) => {
+      const a = i / o.shape.length * TAU, x = Math.cos(a) * o.r * k, y = Math.sin(a) * o.r * k;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.closePath();
+  };
+  if (o.kind === 'meteor') {
+    const a = Math.atan2(o.vy, o.vx), tl = clamp(Math.hypot(o.vx, o.vy) * .2, 55 * u, 120 * u) * (o.big ? 1.25 : 1);
+    ctx.save(); ctx.rotate(a);
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(0, 0, -tl, 0);
+    g.addColorStop(0, 'rgba(255,190,110,.95)'); g.addColorStop(.5, 'rgba(255,110,60,.45)'); g.addColorStop(1, 'rgba(255,70,40,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -o.r); ctx.lineTo(-tl, 0); ctx.lineTo(0, o.r); ctx.closePath(); ctx.fill();
+    const g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, o.r * 2.4);
+    g2.addColorStop(0, 'rgba(255,225,170,.85)'); g2.addColorStop(1, 'rgba(255,120,60,0)');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(0, 0, o.r * 2.4, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.rotate(o.rot); poly();
+    ctx.fillStyle = '#4a2c22'; ctx.fill(); ctx.strokeStyle = '#ffb070'; ctx.lineWidth = 2; ctx.stroke();
+  } else {
+    ctx.rotate(o.rot); poly();
+    ctx.fillStyle = '#7c726d'; ctx.fill();
+    ctx.strokeStyle = '#b4a79f'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(40,34,32,.55)';
+    ctx.beginPath(); ctx.arc(o.r * .25, -o.r * .2, o.r * .25, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawGalaxy(g) {
+  const s = g.r * 3.1, dangerous = P.mass < needMass(g.type);
+  if (dangerous && state !== 'menu') {          // çekim alanı
+    const F = g.r * 3.2, gr = ctx.createRadialGradient(g.x, g.y, g.r * .8, g.x, g.y, F);
+    gr.addColorStop(0, 'rgba(255,90,110,.16)'); gr.addColorStop(1, 'rgba(255,90,110,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(g.x, g.y, F, 0, TAU); ctx.fill();
+  }
+  ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.rot);
+  ctx.drawImage(g.spr, -s / 2, -s / 2, s, s); ctx.restore();
+  if (state === 'menu') return;
+  ctx.save(); ctx.translate(g.x, g.y);
+  if (!dangerous) {
+    ctx.strokeStyle = `rgba(94,242,255,${.65 + .25 * Math.sin(time * 4 + g.x)})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, g.r, 0, TAU); ctx.stroke();
+  } else {
+    ctx.setLineDash([7 * u, 5 * u]); ctx.lineDashOffset = -time * 22;
+    ctx.strokeStyle = `rgba(255,107,122,${.6 + .35 * Math.sin(time * 6 + g.y)})`; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, g.r * (1 + .03 * Math.sin(time * 6)), 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+const METEOR_SHAPE = Array.from({ length: 9 }, () => rnd(.78, 1.12));
+
+function drawPlayer() {
+  if (P.hidden) return;
+  const idx = stageIndex(P.mass), x = P.x, y = P.y;
+  let c = starColor(P.mass), r = pr(), charge = 0;
+  if (state === 'nova' && !nova.exploded) {
+    charge = Math.min(1, nova.t / NOVA_CHARGE);
+    c = c.map(v => Math.round(mixv(v, 255, charge)));
+    r *= (1 + 1.6 * charge * charge) * (1 + .06 * charge * Math.sin(time * 40));
+  }
+  const glow = c.join(',');
+
+  // Kuyruk (evreye göre farklı)
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  const life = trailLife(), tr = P.trail;
+  for (let i = tr.length - 1; i > 0; i--) {
+    const k = 1 - tr[i].age / life; if (k <= 0) continue;
+    ctx.strokeStyle = `rgba(${glow},${.55 * k})`; ctx.lineWidth = Math.max(.6, r * (idx === 0 ? 1.1 : 1.7) * k);
+    ctx.beginPath(); ctx.moveTo(tr[i].x, tr[i].y); ctx.lineTo(tr[i - 1].x, tr[i - 1].y); ctx.stroke();
+    if (idx === 2) {                                   // kuyruklu yıldız: ikinci, kıvrımlı toz kuyruğu
+      const o1 = (tr[i].age / life) * 16 * u, o2 = (tr[i - 1].age / life) * 16 * u;
+      ctx.strokeStyle = `rgba(255,214,150,${.3 * k})`; ctx.lineWidth = Math.max(.5, r * .9 * k);
+      ctx.beginPath(); ctx.moveTo(tr[i].x + o1, tr[i].y); ctx.lineTo(tr[i - 1].x + o2, tr[i - 1].y); ctx.stroke();
+    }
+    if (idx === 1 && i % 4 === 0) {                    // meteor: saçılan kıvılcımlar
+      ctx.fillStyle = `rgba(255,190,110,${.8 * k})`;
+      ctx.beginPath(); ctx.arc(tr[i].x + Math.sin(i * 7 + time * 20) * r * .7, tr[i].y, Math.max(.8, r * .13), 0, TAU); ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // Gövde
+  ctx.save();
+  if (P.invul > 0) ctx.globalAlpha = .45 + .35 * Math.sin(time * 30);
+  const pulse = idx === 5 ? 1 + .08 * Math.sin(time * 2.5) : 1, gm = [3, 3.2, 3.6, 3.8, 4.2, 4.6][idx] * pulse;
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  let g = ctx.createRadialGradient(x, y, 0, x, y, r * gm);
+  g.addColorStop(0, `rgba(${glow},${idx === 0 ? .4 : .6})`); g.addColorStop(1, `rgba(${glow},0)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * gm, 0, TAU); ctx.fill();
+
+  if (idx === 0) {                                     // toz: çevresinde dönen zerreler
+    ctx.fillStyle = `rgba(${glow},.85)`;
+    for (let i = 0; i < 7; i++) {
+      const a = time * (.8 + i * .13) + i * 2.1, d = r * (1.5 + (i % 3) * .55);
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, Math.max(.8, r * .16), 0, TAU); ctx.fill();
+    }
+  } else if (idx === 2) {                              // kuyruklu yıldız: buzlu koma
+    g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.3);
+    g.addColorStop(0, 'rgba(230,255,255,.45)'); g.addColorStop(1, 'rgba(111,243,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.3, 0, TAU); ctx.fill();
+  } else if (idx === 3) {                              // sarı cüce: dalgalanan korona ışınları
+    ctx.strokeStyle = `rgba(${glow},.7)`; ctx.lineWidth = 1.6;
+    for (let i = 0; i < 8; i++) {
+      const a = time * .3 + i * TAU / 8, len = r * (1.7 + .35 * Math.sin(time * 3 + i * 1.7));
+      ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * .85, y + Math.sin(a) * r * .85);
+      ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
+    }
+  } else if (idx === 4) {                              // mavi dev: keskin ışınlar ve halka
+    ctx.strokeStyle = `rgba(${glow},.8)`; ctx.lineWidth = 1.8;
+    for (let i = 0; i < 12; i++) {
+      const a = time * .9 + i * TAU / 12, len = r * (i % 2 ? 2.3 : 3.4);
+      ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * .8, y + Math.sin(a) * r * .8);
+      ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(${glow},.3)`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.9, 0, TAU); ctx.stroke();
+  } else if (idx === 5) {                              // kırmızı süper dev: yüzey püskürtmeleri
+    ctx.strokeStyle = 'rgba(255,150,80,.75)'; ctx.lineWidth = Math.max(2, r * .22);
+    for (let i = 0; i < 3; i++) {
+      const a = time * .35 + i * TAU / 3;
+      ctx.beginPath(); ctx.arc(x, y, r * (1.14 + .1 * Math.sin(time * 2 + i * 2)), a, a + .7); ctx.stroke();
+    }
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  if (idx === 1) {                                     // meteor: dönen, kızgın kaya
+    ctx.save(); ctx.translate(x, y); ctx.rotate(time * 1.2);
+    ctx.beginPath();
+    METEOR_SHAPE.forEach((k, i) => {
+      const a = i / METEOR_SHAPE.length * TAU, px = Math.cos(a) * r * k, py = Math.sin(a) * r * k;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    });
+    ctx.closePath();
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.1);
+    g.addColorStop(0, '#fff2d8'); g.addColorStop(.45, rgbStr(c)); g.addColorStop(1, '#7a2f16');
+    ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(255,220,160,.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+  } else {
+    g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.55, rgbStr(c)); g.addColorStop(1, `rgba(${glow},.9)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    if (idx === 5) {                                   // yüzeyde koyu lekeler
+      ctx.fillStyle = 'rgba(120,20,10,.28)';
+      for (let i = 0; i < 5; i++) {
+        const a = time * .2 + i * 1.3, d = r * (.25 + (i % 3) * .18);
+        ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, r * .2, 0, TAU); ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawEffects() {
+  for (const rg of rings) {
+    const k = rg.t / rg.life, e = 1 - Math.pow(1 - k, 3);
+    ctx.globalAlpha = 1 - k; ctx.strokeStyle = rg.color; ctx.lineWidth = rg.r1 > 500 ? 6 : 3;
+    ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r0 + (rg.r1 - rg.r0) * e, 0, TAU); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of parts) {
+    ctx.globalAlpha = 1 - p.t / p.life; ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  const hs = Math.max(.9, Math.min(u, 1.25));
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.font = `900 ${17 * hs}px ${FONT}`;
+  for (const f of floats) {
+    ctx.globalAlpha = Math.min(1, (f.life - f.t) / .35);
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(5,6,22,.85)'; ctx.strokeText(f.text, f.x, f.y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHUD() {
+  const hs = Math.max(.9, Math.min(u, 1.25)), pad = 14 * hs;
+  ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
+
+  for (let i = 0; i < LIVES_MAX; i++) {
+    const x = pad + 11 * hs + i * 27 * hs, y = pad + 12 * hs;
+    starPath(x, y, 11 * hs, 4.6 * hs);
+    if (i < P.lives) { ctx.fillStyle = '#ffe28a'; ctx.shadowColor = 'rgba(255,226,138,.8)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0; }
+    else { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+
+  const c = rgbStr(starColor(P.mass)), st = STAGES[stageIndex(P.mass)];
+  const bx = pad, bw = 160 * hs, bh = 8 * hs, by = pad + 50 * hs;
+  ctx.textAlign = 'left'; ctx.font = `900 ${13 * hs}px ${FONT}`; ctx.fillStyle = c;
+  ctx.fillText(st.name + (P.mass >= STAGES[5].min ? ' → Süpernova' : ''), bx, by - 7 * hs);
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; rr(bx, by, bw, bh, bh / 2); ctx.fill();
+  const fw = Math.max(bh, bw * P.mass / NOVA_MASS);
+  ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 8; rr(bx, by, fw, bh, bh / 2); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(5,6,22,.7)';
+  for (let i = 1; i < STAGES.length; i++) ctx.fillRect(bx + bw * STAGES[i].min / NOVA_MASS - 1, by, 2, bh);
+  ctx.fillStyle = '#a3abdc'; ctx.font = `700 ${12 * hs}px ${FONT}`;
+  ctx.fillText((sector + 1) + '. bölge · ' + THEMES[themeIdx].name, bx, by + bh + 16 * hs);
+
+  ctx.textAlign = 'right'; ctx.fillStyle = '#a3abdc'; ctx.font = `700 ${12 * hs}px ${FONT}`;
+  ctx.fillText(sector > 0 ? 'Skor · ×' + sectorMult().toFixed(1) : 'Skor', W - pad, pad + 10 * hs);
+  ctx.fillStyle = '#eef1ff'; ctx.font = `900 ${32 * hs}px ${FONT}`;
+  ctx.fillText(Math.round(dispScore).toLocaleString('tr-TR'), W - pad, pad + 42 * hs);
+
+  if (raid.phase !== 'idle') {
+    const warn = raid.phase === 'warn', cx = W / 2, cy = pad + 22 * hs, cw = 120 * hs;
+    const label = 'Meteor yağmuru ' + raid.no;
+    ctx.textAlign = 'center'; ctx.font = `900 ${17 * hs}px ${FONT}`;
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(5,6,22,.8)'; ctx.strokeText(label, cx, cy);
+    ctx.fillStyle = warn ? `rgba(255,178,122,${.55 + .45 * Math.sin(time * 14)})` : '#ffb27a'; ctx.fillText(label, cx, cy);
+    if (!warn) {
+      ctx.fillStyle = 'rgba(255,255,255,.16)'; rr(cx - cw / 2, cy + 8 * hs, cw, 5 * hs, 2.5 * hs); ctx.fill();
+      ctx.fillStyle = '#ffb27a'; rr(cx - cw / 2, cy + 8 * hs, Math.max(5 * hs, cw * (1 - raid.t / raid.dur)), 5 * hs, 2.5 * hs); ctx.fill();
+    }
+  }
+}
+
+// Meteor yağmuru uyarısı: sol ve üst kenar parlar, oklar sağa doğru akar
+function drawRaidWarning() {
+  if (raid.phase === 'idle') return;
+  const warn = raid.phase === 'warn', hs = Math.max(.9, Math.min(u, 1.25));
+  const pulse = warn ? .5 + .5 * Math.sin(time * 14) : .2;
+  let g = ctx.createLinearGradient(0, 0, 90 * u, 0);
+  g.addColorStop(0, `rgba(255,120,60,${.5 * pulse + .08})`); g.addColorStop(1, 'rgba(255,120,60,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 90 * u, H);
+  g = ctx.createLinearGradient(0, 0, 0, 70 * u);
+  g.addColorStop(0, `rgba(255,120,60,${.4 * pulse + .05})`); g.addColorStop(1, 'rgba(255,120,60,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W * .9, 70 * u);
+  if (warn) {
+    ctx.strokeStyle = `rgba(255,190,140,${.35 + .5 * pulse})`; ctx.lineWidth = 4 * hs; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let i = 0; i < 5; i++) {
+      const y = H * (.15 + i * .17), x = 22 * hs + ((time * 80) % 30) * hs;
+      ctx.beginPath(); ctx.moveTo(x, y - 12 * hs); ctx.lineTo(x + 14 * hs, y); ctx.lineTo(x, y + 12 * hs); ctx.stroke();
+    }
+  }
+}
+
+function drawToasts() {
+  const hs = Math.max(.9, Math.min(u, 1.25));
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.font = `900 ${20 * hs}px ${FONT}`;
+  toasts.forEach((tt, i) => {
+    ctx.globalAlpha = Math.max(0, Math.min(1, (tt.life - tt.t) / .5, tt.t / .15));
+    const y = H * .27 + i * 32 * hs - tt.t * 8;
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(5,6,22,.85)'; ctx.strokeText(tt.text, W / 2, y);
+    ctx.fillStyle = tt.color; ctx.fillText(tt.text, W / 2, y);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawBackground();
+  ctx.save();
+  if (shake > 0) ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
+  for (const h of holes) drawHole(h);
+  for (const p of pulsars) drawPulsar(p);
+  for (const g of galaxies) drawGalaxy(g);
+  for (const o of rocks) drawRock(o);
+  if (state !== 'over') drawPlayer();
+  drawEffects();
+  ctx.restore();
+  if (flash > 0) { ctx.fillStyle = `rgba(255,70,95,${.32 * flash})`; ctx.fillRect(0, 0, W, H); }
+  if (whiteFlash > 0) { ctx.fillStyle = `rgba(255,255,255,${whiteFlash})`; ctx.fillRect(0, 0, W, H); }
+  if (state === 'play') drawRaidWarning();
+  if (state === 'play' || state === 'nova') { drawHUD(); drawToasts(); }
+}
+
+/* ------------------------------------------------------------------
+   DÖNGÜ + GİRDİ
+------------------------------------------------------------------ */
+let last = 0;
+function frame(ts) {
+  const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts;
+  if (W && H) {
+    time += dt;
+    if (state === 'play') updatePlay(dt);
+    else if (state === 'nova') updateNova(dt);
+    updateWorld(dt);
+    draw();
+  }
+  requestAnimationFrame(frame);
+}
+
+function setTarget(e) {
+  const b = cv.getBoundingClientRect();
+  const off = e.pointerType === 'touch' ? 56 * u : 0;   // parmak yıldızı kapatmasın
+  target.x = clamp(e.clientX - b.left, 0, W);
+  target.y = clamp(e.clientY - b.top - off, 0, H);
+}
+cv.addEventListener('pointerdown', e => { if (cv.setPointerCapture) cv.setPointerCapture(e.pointerId); setTarget(e); });
+cv.addEventListener('pointermove', setTarget);
+cv.addEventListener('contextmenu', e => e.preventDefault());
+// Klavye: ok tuşları / WASD (fare ve dokunmatikle birlikte çalışır)
+const DIRS = { arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0], arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1] };
+const keysDown = {};
+let kbActive = false;
+window.addEventListener('keydown', e => {
+  const k = String(e.key).toLowerCase();
+  if (DIRS[k] && (state === 'play' || state === 'nova')) { keysDown[k] = true; kbActive = true; e.preventDefault(); }
+});
+window.addEventListener('keyup', e => { delete keysDown[String(e.key).toLowerCase()]; });
+window.addEventListener('blur', () => { for (const k in keysDown) delete keysDown[k]; });
+$('play').addEventListener('click', startGame);
+$('again').addEventListener('click', startGame);
+
+if (best > 0) { const b = $('bestStart'); b.hidden = false; b.textContent = 'En yüksek skor: ' + best.toLocaleString('tr-TR'); }
+
+buildSprites();
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stageEl); else window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(frame);
+$('play').focus({ preventScroll: true });
+})();
+</script>
+</body>
+</html>

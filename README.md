@@ -4,7 +4,9 @@ Kayan bir yıldızı fareyle ya da parmağınla yönlendirip küçük galaksiler
 
 ## Nasıl oynanır
 
-Kurulum gerekmez. `novabang.html` dosyasını indirip tarayıcıda açman yeterli.
+**Tarayıcıda oyna:** https://kaanturkarslan.github.io/Game-Novabang/
+
+Ya da `novabang.html` dosyasını indirip tarayıcıda açman yeterli, kurulum gerekmez.
 
 - Tek bir HTML dosyası; harici kütüphane, görsel ya da ses dosyası yok.
 - Masaüstünde fareyle, mobilde dokunarak oynanır.

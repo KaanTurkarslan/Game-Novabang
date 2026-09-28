@@ -10,6 +10,7 @@ Bu dosya EDS'e yüklenecek teslim dosyası değildir. Oyunun hangi adımlarla, h
 - **Evreler ve adları:** Prompt 1 ve 2'deki evre sırası (Yıldız, Kırmızı Dev, Mavi Dev) Prompt 4'te küçükten büyüğe yeniden tasarlandı.
 - **Büyüme değerleri:** Prompt 1 ve 2'deki büyüme miktarları Prompt 5'te %40 çarpanla azaltıldı.
 - **Oyunun adı:** Yıldız Kayması → Kozmik Kıvılcım (Prompt 6) → NovaBang (Prompt 7).
+- **Başlangıç ekranı:** Prompt 1'deki tek "Başla" düğmeli ekran, Prompt 8'de "Oyunu Başlat" ve "Menü" olmak üzere iki düğmeli ekrana dönüştü. Nasıl oynanır rehberi "Oyunu Anla" ekranına taşındı.
 
 ---
 
@@ -147,3 +148,23 @@ Oyunun adını "NovaBang" olarak değiştir (sayfa başlığı, başlangıç ekr
 - Ad, "nova" (süpernova) ve "bang" (patlama) sözcüklerinden oluşur ve oyunun ana anına, yıldızın patlamasına gönderme yapar.
 - Adın başka bir oyunla çakışıp çakışmadığı önce web aramasıyla kontrol edildi, aynı adlı bir oyun bulunamadı.
 - "Başka hiçbir şeyi değiştirme" ile yalnızca ismin değişmesi, çalışan oyunun bozulmaması hedeflendi.
+
+---
+
+## Prompt 8 — Menü, Oyunu Anla ve ilham kaynağı
+```
+Oyunun girişine bir menü ekle. Mevcut çalışan kısımları bozma, dosya tek HTML kalsın.
+
+1. Başlangıç ekranında iki düğme olsun: "Oyunu Başlat" ve "Menü".
+2. "Menü" düğmesi bir menü ekranı açsın. Menüde şu bölümler olsun: oyun hakkında bilgi, bölgeler, yıldız çeşitleri ve oyunun ilham kaynağı. Menünün üstünde "Oyunu Anla" düğmesi olsun.
+3. "Oyunu Anla" düğmesi, oyunun işleyişini (amaç, kontroller, halka kuralı, galaksi çeşitleri, tehlikeler, süpernova ve bölgeler, puan ve canlar) anlatan bilgilendirici bir yazı ekranı açsın.
+4. İlham kaynağı bölümüne şunu yaz: yıldızlara ve uzaya olan ilgim; hocamız bir oyun yapmayı düşünün dediğinde aklıma gelen, küçükken oynadığım yakalamacalı bir savaş uçağı oyunu.
+5. Menü ve Oyunu Anla ekranlarının altında sabit "Geri" ve "Oyunu Başlat" düğmeleri olsun. Esc tuşu bir önceki ekrana döndürsün. Oyun sonu ekranına, başlangıç ekranına dönen bir "Ana menü" düğmesi ekle.
+6. Yıldız, bölge ve galaksi bilgileri oyunun kendi sabitlerinden üretilsin ki ayarları değiştirince menü de güncellensin. Mobil dikeyde de düzgün görünsün ve uzun sayfalar kaydırılabilsin.
+```
+**Neden böyle yazdım:**
+- Menünün bölümlerini tek tek saydım: yapay zekâ yalnızca düğmeyi ekleyip içeriği boş ya da genel geçer bırakmasın diye.
+- İlham kaynağını kendi cümlelerimle verdim: fikir ve anı bana ait olduğu için bu metni yapay zekânın uydurmasını istemedim.
+- "Sabitlerden üretilsin": menüde yazan sayılar (evre aralıkları, puanlar, çarpanlar) ile oyundaki sayılar birbiriyle çelişmesin diye.
+- "Mobilde düzgün görünsün ve kaydırılabilsin": uzun metinli ekranlar telefonda kolayca taşar.
+- "Mevcut çalışan kısımları bozma": yeni ekran eklenirken oyunun kendisi bozulmasın diye.

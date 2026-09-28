@@ -6,7 +6,7 @@
 <title>NovaBang</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   /* Oyun bilerek her temada koyu uzay renkleriyle çalışır. */
   :root {
@@ -38,8 +38,8 @@
 
   .overlay {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 14px; padding: 20px; text-align: center; overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: 20px; text-align: center; overflow-y: auto; overscroll-behavior: contain;
     background: radial-gradient(ellipse at 50% 32%, rgba(58, 28, 120, .55), rgba(5, 6, 22, .88) 70%);
     opacity: 1; visibility: visible;
     transition: opacity .35s ease, visibility 0s;
@@ -89,6 +89,66 @@
   .stats span { color: var(--muted); }
   .stats b { color: var(--ink); font-weight: 900; text-align: right; }
 
+
+  /* Ekran içeriği: sığarsa dikeyde ortalanır, sığmazsa yukarıdan başlar ve kaydırılır */
+  .inner { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin-block: auto; }
+
+  /* Düğme çeşitleri */
+  .btn.wide { width: min(320px, 100%); padding: 0 20px; align-self: center; }
+  .btn.ghost { background: transparent; color: var(--cyan); box-shadow: inset 0 0 0 2px var(--cyan), 0 0 22px rgba(94, 242, 255, .16); }
+  .btn.ghost:hover { background: rgba(94, 242, 255, .1); }
+  .btn.ghost:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px var(--cyan); }
+  .stack { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin-top: 6px; }
+  .stack .btn { margin-top: 0; }
+
+  /* Menü ve "Oyunu Anla" sayfaları */
+  .page .inner { max-width: 540px; margin: 0 auto; align-items: stretch; text-align: left; gap: 16px; }
+  .page h2 { text-align: center; padding-top: 8px; text-shadow: 0 0 24px rgba(94, 242, 255, .4); }
+  .card { background: rgba(14, 16, 52, .66); border: 1px solid rgba(160, 170, 255, .18); border-radius: 18px; padding: 16px 16px 14px; }
+  .card h3 { margin: 0 0 10px; font-size: 19px; font-weight: 900; line-height: 1.2; color: var(--cyan); }
+  .card p { margin: 0 0 10px; color: #d3d8f6; font-size: 15px; font-weight: 400; line-height: 1.6; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .note { color: var(--muted); font-size: 13.5px; }
+  .card b { font-weight: 900; color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { padding: 6px 12px; border-radius: 999px; background: rgba(94, 242, 255, .12); border: 1px solid rgba(94, 242, 255, .3); color: var(--cyan); font-weight: 900; font-size: 13px; }
+
+  .card .howto { max-width: none; margin: 4px 0 12px; gap: 12px; }
+  .card .howto:last-child { margin-bottom: 0; }
+  .card .howto li { align-items: flex-start; font-size: 15px; font-weight: 400; line-height: 1.55; color: #d3d8f6; }
+  .ico.rock   { background: #7c726d; border-radius: 42% 58% 46% 54%; box-shadow: inset -4px -4px 0 rgba(0, 0, 0, .25); }
+  .ico.meteor { background: radial-gradient(circle at 65% 65%, #fff2d8 0 18%, #ff9a4a 42%, rgba(255, 110, 60, .35) 62%, transparent 74%); }
+  .ico.pulsar { background: radial-gradient(circle, #fff 0 20%, #7ff0ff 42%, rgba(90, 220, 255, .3) 62%, transparent 74%); }
+  .tips { margin: 0; padding-left: 20px; color: #d3d8f6; font-size: 15px; line-height: 1.6; }
+  .tips li { margin-bottom: 6px; }
+  .tips li:last-child { margin-bottom: 0; }
+
+  /* Yıldız evreleri ve bölge kartları */
+  .star-row, .region { padding: 12px 0; border-top: 1px solid rgba(160, 170, 255, .14); }
+  .star-row:first-child, .region:first-child { border-top: 0; padding-top: 4px; }
+  .star-row:last-child, .region:last-child { padding-bottom: 0; }
+  .star-row { display: flex; gap: 14px; align-items: flex-start; }
+  .orb-wrap { flex: none; width: 46px; height: 46px; display: grid; place-items: center; }
+  .orb { position: relative; width: var(--d); height: var(--d); border-radius: 50%; background: radial-gradient(circle at 40% 38%, #fff 0, var(--c) 48%); box-shadow: 0 0 10px var(--c); }
+  .orb::after { content: ""; position: absolute; inset: -70%; border-radius: 50%; background: radial-gradient(circle, var(--c), transparent 62%); opacity: .3; }
+  .swatch { height: 60px; margin-bottom: 10px; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .22); }
+  .row-body { min-width: 0; }
+  .row-body h4 { margin: 0 0 4px; font-size: 16.5px; font-weight: 900; line-height: 1.25; color: var(--c, var(--ink)); }
+  .row-body h4 small { margin-left: 8px; color: var(--muted); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .row-body p { margin: 0 0 4px; }
+  .row-body .eats { color: var(--muted); font-size: 13.5px; }
+
+  /* Galaksi tablosu */
+  .gal-table { display: grid; gap: 6px; margin: 4px 0 12px; }
+  .gal-row { display: grid; grid-template-columns: 5.2em 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .06); font-size: 14.5px; }
+  .gal-row span { color: #d3d8f6; }
+  .gal-row span:first-child { font-weight: 900; color: var(--ink); }
+  .gal-row b { color: var(--gold); font-weight: 900; }
+
+  /* Alttaki sabit düğme çubuğu (Geri / Oyunu Başlat) */
+  .footbar { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 12px; padding: 16px 0 4px; margin-top: 4px; background: linear-gradient(to top, rgba(5, 6, 22, .97) 65%, rgba(5, 6, 22, 0)); }
+  .footbar .btn { flex: 1 1 0; min-width: 0; margin-top: 0; padding: 0 12px; }
+
   @media (prefers-reduced-motion: reduce) {
     .overlay, .overlay.hidden, .btn { transition: none; }
   }
@@ -98,31 +158,142 @@
 <div id="stage">
   <canvas id="c" role="img" aria-label="NovaBang oyun alanı"></canvas>
 
+  <!-- 1) Başlangıç ekranı: iki düğme -->
   <div id="start" class="overlay">
-    <h1>NovaBang</h1>
-    <p class="tag">Bir kıvılcımdan süpernovaya: galaksileri yut, büyü, patla.</p>
-    <ul class="howto">
-      <li><span class="ico ok"></span><span>Turkuaz halkalı galaksileri yut. Büyüdükçe rengin ve evren değişir.</span></li>
-      <li><span class="ico bad"></span><span>Kırmızı kesikli halkalı galaksiler seni kendine çeker. Çarparsan can kaybedersin.</span></li>
-      <li><span class="ico hole"></span><span>Kara delik, asteroit ve pulsar ışınlarından kaç. Zamanla soldan meteor yağmurları gelir.</span></li>
-      <li><span class="ico nova"></span><span>Yeterince büyüyünce süpernova patlar ve yeni, daha zor bir bölgeye geçersin.</span></li>
-    </ul>
-    <p class="best" id="bestStart" hidden></p>
-    <button class="btn" id="play">Başla</button>
-    <p class="hint">Parmağını ya da farenle sürükle, yıldız seni takip eder. Bilgisayarda ok tuşları ve WASD de çalışır.</p>
+    <div class="inner">
+      <h1>NovaBang</h1>
+      <p class="tag">Bir kıvılcımdan süpernovaya: galaksileri yut, büyü, patla.</p>
+      <p class="best" id="bestStart" hidden></p>
+      <div class="stack">
+        <button class="btn wide" id="play" data-focus>Oyunu Başlat</button>
+        <button class="btn ghost wide" id="openMenu">Menü</button>
+      </div>
+      <p class="hint">Parmağını ya da farenle sürükle, yıldız seni takip eder. Bilgisayarda ok tuşları ve WASD de çalışır.</p>
+    </div>
   </div>
 
-  <div id="over" class="overlay hidden" role="dialog" aria-labelledby="overTitle">
-    <h2 id="overTitle">Yıldız söndü</h2>
-    <div class="badge" id="newBest" hidden>Yeni rekor!</div>
-    <div class="big-score" id="finalScore">0</div>
-    <div class="stats">
-      <div><span>En yüksek skor</span><b id="bestScore">0</b></div>
-      <div><span>Ulaşılan bölge</span><b id="finalSector">1</b></div>
-      <div><span>Ulaşılan evre</span><b id="finalStage">Yıldız Tozu</b></div>
-      <div><span>Yutulan galaksi</span><b id="finalEaten">0</b></div>
+  <!-- 2) Menü: oyun, bölgeler, yıldız çeşitleri, ilham kaynağı -->
+  <div id="menu" class="overlay page hidden" role="dialog" aria-labelledby="menuTitle">
+    <div class="inner">
+      <h2 id="menuTitle">Menü</h2>
+      <button class="btn wide" id="openGuide" data-focus>Oyunu Anla</button>
+
+      <section class="card">
+        <h3>Oyun Hakkında</h3>
+        <p>NovaBang, uzayda geçen kısa oturumlu bir arcade oyunudur. Küçücük bir yıldız tozunu parmağınla ya da fareyle yönlendirirsin. Kendinden küçük galaksileri yuttukça büyür, 6 evre geçirir ve sonunda süpernova olarak patlarsın.</p>
+        <p>Patlama oyunu bitirmez: yıldızın yeniden doğar ve yeni, daha zor bir bölgeye geçersin. Canların bitene kadar oyun sürer. Amaç, en çok süpernovayı yapmak ve en yüksek skoru kırmaktır.</p>
+        <div class="chips"><span class="chip">3 can</span><span class="chip">6 yıldız evresi</span><span class="chip">3 renkli bölge</span><span class="chip">Sonsuz oyun</span></div>
+      </section>
+
+      <section class="card">
+        <h3>Bölgeler</h3>
+        <p>Her süpernovadan sonra yeni bir bölgeye geçersin. Bölge değişince gökyüzünün rengi değişir, oyun hızlanır ve puan çarpanı artar.</p>
+        <div id="regionList"></div>
+        <p class="note">4. bölgeden itibaren renkler başa döner ama zorluk artmaya devam eder: puan çarpanı her bölgede +0,5 artar, akış hızlanır, kara delikler biraz daha güçlü çeker ve 4. bölgeden itibaren aynı anda iki pulsar çıkabilir. Büyümenin zorlaşması %40'ta durur.</p>
+      </section>
+
+      <section class="card">
+        <h3>Yıldız Çeşitleri</h3>
+        <p>Yıldızının büyüklüğü 0'dan 200'e kadar gider. Büyüdükçe 6 evre geçirir; her evrenin rengi, boyu ve görünümü farklıdır. Büyüklük 200'e ulaşınca süpernova patlar.</p>
+        <div id="starList"></div>
+      </section>
+
+      <section class="card">
+        <h3>Oyunun İlham Kaynağı</h3>
+        <p>Bu oyun iki şeyden doğdu. Birincisi, yıldızlara ve uzaya olan ilgim.</p>
+        <p>İkincisi, hocamız bizden bir oyun yapmayı düşünmemizi istediği an gözümün önüne gelen bir çocukluk anısı: küçükken oynadığım, yakalamacalı bir savaş uçağı oyunu. O oyundaki kovalayıp kaçma heyecanını uzaya taşımak istedim. NovaBang'de de hem avlarının peşinden gidiyor hem de tehlikelerden kaçıyorsun.</p>
+      </section>
+
+      <div class="footbar">
+        <button class="btn ghost" id="menuBack">Geri</button>
+        <button class="btn" id="menuPlay">Oyunu Başlat</button>
+      </div>
     </div>
-    <button class="btn" id="again">Tekrar oyna</button>
+  </div>
+
+  <!-- 3) Oyunu Anla: oyunun işleyişi -->
+  <div id="guide" class="overlay page hidden" role="dialog" aria-labelledby="guideTitle">
+    <div class="inner">
+      <h2 id="guideTitle">Oyunu Anla</h2>
+
+      <section class="card">
+        <h3>Amaç</h3>
+        <p>Küçük bir yıldız tozunu yönlendirirsin. Kendinden küçük galaksileri yutarak büyür, evrim geçirir ve sonunda süpernova olarak patlarsın. Amacın, 3 canını kaybetmeden mümkün olduğunca çok galaksi yutmak, mümkün olduğunca çok süpernova yapmak ve en yüksek skoru kırmaktır. Oyunun bir bitiş çizgisi yoktur: canların bitene kadar yeni bölgelere geçersin.</p>
+      </section>
+
+      <section class="card">
+        <h3>Nasıl yönlendirilir?</h3>
+        <p>Bilgisayarda fareyi hareket ettirmen yeterli, tıklaman gerekmez. İstersen ok tuşlarını ya da W, A, S, D tuşlarını da kullanabilirsin. Telefonda ve tablette parmağını ekranda sürükle. Yıldız, parmağının hemen üstünde durur; böylece parmağın onu kapatmaz. Yıldız hedefe doğru yumuşakça kayar, bu yüzden yön değiştirirken biraz önceden davranmak gerekir.</p>
+      </section>
+
+      <section class="card">
+        <h3>Ne yutulur, ne yutulmaz?</h3>
+        <ul class="howto">
+          <li><span class="ico ok"></span><span><b>Turkuaz düz halka:</b> Bu galaksiyi yutabilirsin. Yutunca büyür ve puan kazanırsın.</span></li>
+          <li><span class="ico bad"></span><span><b>Kırmızı kesikli halka:</b> Bu galaksi senden büyüktür. Çarparsan 1 can ve büyüklüğünün %25'ini kaybedersin. Ayrıca seni kendine doğru çeker.</span></li>
+        </ul>
+        <p>Bir galaksiyi yutabilmek için yıldızının, o galaksinin istediği evreye ulaşmış olması gerekir. Yıldızın büyüdükçe halkaların rengi kendiliğinden turkuaza döner. Galaksi türleri, hangi evreden itibaren yutulabildikleri ve verdikleri puan:</p>
+        <div class="gal-table" id="galaxyList"></div>
+        <p class="note">Büyüdükçe küçük galaksiler daha az besler: yıldızın bir evre büyüdükçe, altında kalan galaksilerden aldığın büyüme %30 azalır. Bu yüzden ilerledikçe daha büyük galaksilerin peşine düşmen gerekir.</p>
+      </section>
+
+      <section class="card">
+        <h3>Tehlikeler</h3>
+        <ul class="howto">
+          <li><span class="ico bad"></span><span><b>Çekim kuvveti:</b> Yutamadığın galaksiler, kara delikler, pulsarlar ve kaya parçaları yıldızını kendilerine doğru çeker. Çekim senin hızından zayıftır; yönünü çevirirsen kurtulabilirsin.</span></li>
+          <li><span class="ico hole"></span><span><b>Kara delik:</b> Yaklaşık 8. saniyede görünmeye başlar. Ortasındaki kırmızı kesikli çekirdeğe girersen 1 can kaybeder ve dışarı savrulursun.</span></li>
+          <li><span class="ico rock"></span><span><b>Asteroit kuşağı:</b> Gri kayalar gruplar hâlinde iner. Çarparsan büyüklüğün 8 azalır ve bir saniye yavaşlarsın, ama can kaybetmezsin.</span></li>
+          <li><span class="ico meteor"></span><span><b>Meteor yağmuru:</b> İlk yağmur yaklaşık 16. saniyede gelir. Önce ekranın sol ve üst kenarı turuncu yanıp söner; bu yaklaşık 2 saniyelik uyarıdır. Sonra ateşli meteorlar soldan ve üstten girip sağa ve aşağı doğru yağar. Çarparsan büyüklüğün 12 azalır (iri kayalarda 18); büyüklüğün yetmezse 1 can gider. Her yağmur bir öncekinden daha uzun, sık ve hızlıdır.</span></li>
+          <li><span class="ico pulsar"></span><span><b>Pulsar:</b> 2. bölgeden itibaren çıkar. Dönen iki ışını vardır; ışına değersen 1 can kaybedersin.</span></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h3>Süpernova ve yeni bölgeler</h3>
+        <p>Yıldızının büyüklüğü 200'e ulaşınca yıldız şişip beyazlaşır ve süpernova olarak patlar. Şok dalgası ekrandaki her şeyi yok eder ve puana çevirir; üstüne 1000 puan bonus alırsın. Canın 3'ten azsa 1 can geri kazanırsın.</p>
+        <p>Ardından yıldızın Meteor evresinde yeniden doğar (kısa bir süre dokunulmazdır) ve gökyüzü yeni bir bölgenin rengine bürünür. Yeni bölgede her şey daha hızlı akar ve büyümek daha zordur; karşılığında puanların daha değerlidir. Bölgelerin ayrıntılarını Menü'deki Bölgeler kısmında bulabilirsin.</p>
+      </section>
+
+      <section class="card">
+        <h3>Puan ve canlar</h3>
+        <p>Yuttuğun her galaksi puan verir ve bu puan bölge çarpanıyla çarpılır (1. bölge ×1, 2. bölge ×1,5, 3. bölge ×2 ve böyle devam eder). Sol üstteki 3 altın yıldız senin canlarındır. Bir can kaybettiğinde kısa bir süre dokunulmaz olursun ve yıldızın yanıp söner. Canların bitince oyun biter; en yüksek skorun bu cihazda saklanır.</p>
+      </section>
+
+      <section class="card">
+        <h3>Küçük ipuçları</h3>
+        <ul class="tips">
+          <li>Başlarken sarmal galaksileri topla; ilk hedefin Meteor evresine ulaşmak.</li>
+          <li>Halkalara bak: turkuaz olanı yut, kırmızı kesikli olandan uzak dur.</li>
+          <li>Kara deliğin çekim alanına girmeden yönünü çevir; çekim merkeze yaklaştıkça hızla güçlenir.</li>
+          <li>Meteorların ateşli kuyruğu geldikleri yönü gösterir; kuyruğa göre kaç.</li>
+          <li>Büyüdükçe küçük galaksilerle vakit kaybetme, daha büyük hedeflere yönel.</li>
+        </ul>
+      </section>
+
+      <div class="footbar">
+        <button class="btn ghost" id="guideBack" data-focus>Geri</button>
+        <button class="btn" id="guidePlay">Oyunu Başlat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4) Oyun sonu ekranı -->
+  <div id="over" class="overlay hidden" role="dialog" aria-labelledby="overTitle">
+    <div class="inner">
+      <h2 id="overTitle">Yıldız söndü</h2>
+      <div class="badge" id="newBest" hidden>Yeni rekor!</div>
+      <div class="big-score" id="finalScore">0</div>
+      <div class="stats">
+        <div><span>En yüksek skor</span><b id="bestScore">0</b></div>
+        <div><span>Ulaşılan bölge</span><b id="finalSector">1</b></div>
+        <div><span>Ulaşılan evre</span><b id="finalStage">Yıldız Tozu</b></div>
+        <div><span>Yutulan galaksi</span><b id="finalEaten">0</b></div>
+      </div>
+      <div class="stack">
+        <button class="btn wide" id="again" data-focus>Tekrar oyna</button>
+        <button class="btn ghost wide" id="toTitle">Ana menü</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -578,7 +749,7 @@ function startGame() {
   P.trail.length = 0; target.x = P.x; target.y = P.y;
   state = 'play';
   for (let i = 0; i < 4; i++) spawnGalaxy(true);
-  startOv.classList.add('hidden'); overOv.classList.add('hidden');
+  showScreen(null);   // bütün ekranları kapat, oyun başlasın
   toast('Turkuaz halkalı galaksileri yut', '#5ef2ff', 3.4);
 }
 
@@ -1152,10 +1323,101 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { delete keysDown[String(e.key).toLowerCase()]; });
 window.addEventListener('blur', () => { for (const k in keysDown) delete keysDown[k]; });
-$('play').addEventListener('click', startGame);
-$('again').addEventListener('click', startGame);
 
-if (best > 0) { const b = $('bestStart'); b.hidden = false; b.textContent = 'En yüksek skor: ' + best.toLocaleString('tr-TR'); }
+/* ------------------------------------------------------------------
+   MENÜ EKRANLARI: başlangıç → menü → oyunu anla (ve oyun sonu)
+------------------------------------------------------------------ */
+const menuOv = $('menu'), guideOv = $('guide');
+const SCREENS = { start: startOv, menu: menuOv, guide: guideOv, over: overOv };
+
+// Verilen ekranı açar, diğerlerini kapatır. showScreen(null) hepsini kapatır (oyun başlar).
+function showScreen(name) {
+  for (const k in SCREENS) SCREENS[k].classList.toggle('hidden', k !== name);
+  const el = SCREENS[name];
+  if (!el) return;
+  el.scrollTop = 0;
+  const first = el.querySelector('[data-focus]');
+  if (first) first.focus({ preventScroll: true });
+}
+
+function updateBest() {
+  const b = $('bestStart');
+  b.hidden = !(best > 0);
+  if (best > 0) b.textContent = 'En yüksek skor: ' + best.toLocaleString('tr-TR');
+}
+
+// Oyun sonu ekranından başlangıç ekranına döner
+function goTitle() {
+  state = 'menu';
+  galaxies = []; holes = []; rocks = []; pulsars = []; parts = []; rings = []; floats = []; toasts = [];
+  P.hidden = false; P.invul = 0; P.slow = 0; P.kx = 0; P.ky = 0; P.trail.length = 0;
+  shake = 0; flash = 0; whiteFlash = 0;
+  themeIdx = 0; prevTheme = 0; themeMix = 1;
+  updateBest();
+  showScreen('start');
+}
+
+// Menüdeki yıldız ve bölge kartları
+const STAR_LOOK = [
+  'Soluk gri-mavi bir kıvılcım. Çevresinde küçük zerreler döner, kuyruğu kısadır.',
+  'Turuncu, kızgın bir kaya. Dönerek ilerler ve arkasında kıvılcım saçar.',
+  'Turkuaz renkli, buzlu bir çekirdek. Mavi iyon ve altın toz olmak üzere iki kuyruğu vardır.',
+  'Sıcak, sarı bir yıldız. Çevresinde dalgalanan korona ışınları vardır.',
+  'Mavi renkli, keskin ışınlı ve dış halkalı bir dev. Artık Süper galaksileri de yutabilir.',
+  'Nabız gibi atan kırmızı bir dev. Yüzeyinde püskürtmeler ve koyu lekeler vardır. Süpernovaya çok az kaldı.'
+];
+const REGION_TEXT = [
+  'Başlangıç bölgen. Kara delikler, asteroit kuşakları ve meteor yağmurları burada başlar.',
+  'Gökyüzü kızıla döner. Akış başlangıca göre %20 hızlıdır, büyümek %10 zorlaşır ve dönen ışınlı pulsarlar ortaya çıkar.',
+  'Akış başlangıca göre %40 hızlıdır, büyümek %20 zorlaşır. Meteor yağmurları daha sık ve yoğun gelir.'
+];
+// Listeler oyunun kendi verilerinden (STAGES, THEMES, TYPES) üretilir; ayarları değiştirirsen menü de güncellenir
+function buildMenuLists() {
+  const allTypes = Object.values(TYPES);
+  $('starList').innerHTML = STAGES.map((st, i) => {
+    const next = STAGES[i + 1], range = st.min + '–' + ((next ? next.min : NOVA_MASS) - 1);
+    const eats = allTypes.filter(t => t.stage <= i).map(t => t.label);
+    const c = rgbStr(st.rgb), d = Math.round(st.radius * 1.5);
+    return `<div class="star-row" style="--c:${c}">
+      <span class="orb-wrap"><span class="orb" style="--d:${d}px"></span></span>
+      <div class="row-body">
+        <h4>${i + 1}. ${st.name}<small>Büyüklük ${range}</small></h4>
+        <p>${STAR_LOOK[i] || ''}</p>
+        <p class="eats">Yutabildiği galaksiler: <b>${eats.length === allTypes.length ? 'Hepsi' : eats.join(', ')}</b></p>
+      </div></div>`;
+  }).join('');
+
+  $('regionList').innerHTML = THEMES.map((th, i) => {
+    const bg = `radial-gradient(circle at 18% 30%, hsla(${th.neb[0]},80%,55%,.5), transparent 55%), radial-gradient(circle at 82% 65%, hsla(${th.neb[1]},80%,55%,.42), transparent 55%), linear-gradient(180deg, ${th.stops.join(', ')})`;
+    const mult = (1 + 0.5 * i).toLocaleString('tr-TR');
+    return `<div class="region" style="--c:hsl(${th.neb[0]},85%,72%)">
+      <div class="swatch" style="background:${bg}"></div>
+      <div class="row-body"><h4>${i + 1}. Bölge · ${th.name}<small>Puan ×${mult}</small></h4><p>${REGION_TEXT[i] || ''}</p></div></div>`;
+  }).join('');
+
+  $('galaxyList').innerHTML = allTypes.map(t =>
+    `<div class="gal-row"><span>${t.label}</span><span>${t.stage === 0 ? 'Her evrede yutulur' : STAGES[t.stage].name + ' ve üstü'}</span><b>+${t.pts}</b></div>`
+  ).join('');
+}
+
+// Düğmeler
+$('play').addEventListener('click', startGame);
+$('menuPlay').addEventListener('click', startGame);
+$('guidePlay').addEventListener('click', startGame);
+$('again').addEventListener('click', startGame);
+$('openMenu').addEventListener('click', () => showScreen('menu'));
+$('menuBack').addEventListener('click', () => showScreen('start'));
+$('openGuide').addEventListener('click', () => showScreen('guide'));
+$('guideBack').addEventListener('click', () => showScreen('menu'));
+$('toTitle').addEventListener('click', goTitle);
+window.addEventListener('keydown', e => {           // Esc: bir önceki ekrana dön
+  if (e.key !== 'Escape') return;
+  if (!guideOv.classList.contains('hidden')) showScreen('menu');
+  else if (!menuOv.classList.contains('hidden')) showScreen('start');
+});
+
+updateBest();
+buildMenuLists();
 
 buildSprites();
 if (window.ResizeObserver) new ResizeObserver(resize).observe(stageEl); else window.addEventListener('resize', resize);
